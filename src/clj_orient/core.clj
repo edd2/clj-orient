@@ -14,12 +14,14 @@
       :doc "This namespace wraps the basic OrientDB API functionality and all the DocumentDB functionality."}
   clj-orient.core
   (:refer-clojure :exclude [load])
-  (:import (com.orientechnologies.orient.client.remote OServerAdmin)
+  (:import
+    (com.orientechnologies.orient.client.remote OServerAdmin)
     (com.orientechnologies.orient.core.db ODatabase ODatabaseComplex ODatabasePoolBase ODatabaseRecordThreadLocal)
     (com.orientechnologies.orient.core.db.document ODatabaseDocumentTx ODatabaseDocumentPool)
     (com.orientechnologies.orient.core.db.record ODatabaseRecord OTrackedList OTrackedSet OTrackedMap)
     (com.orientechnologies.orient.core.hook ORecordHook ORecordHookAbstract)
-    (com.orientechnologies.orient.core.id ORecordId ORID)
+    ;; (com.orientechnologies.orient.core.id ORecordId ORID)                            -- EAD - replaced
+    (com.orientechnologies.orient.core.id ORecordId ORID OClusterPositionFactory)
     (com.orientechnologies.orient.core.metadata.schema OClass OProperty OClass$INDEX_TYPE OType)
     (com.orientechnologies.orient.core.record ORecord)
     (com.orientechnologies.orient.core.record.impl ODocument ORecordBytes)
@@ -164,7 +166,7 @@
        x#)))
 
 (defn browse-class "Returns a seq of all the documents of the specified class."
-  [kclass & [polymorphic?  fetch-plan]]
+  [kclass & [polymorphic? fetch-plan]]
   (let [iter (.browseClass ^ODatabaseDocumentTx *db* (kw->oclass-name kclass) (boolean polymorphic?))]
     (if fetch-plan (.setFetchPlan iter fetch-plan))
     (map #(CljODoc. %) (iterator-seq iter))))
@@ -177,6 +179,7 @@
 (defn count-class "" [kclass] (.countClass ^ODatabaseDocumentTx *db* (kw->oclass-name kclass)))
 (defn count-cluster "" [id] (.countClusterElements *db* (if (keyword? id) (kw->oclass-name id) id)))
 
+(defn cluster-position-from-value "" [id] (.valueOf OClusterPositionFactory/INSTANCE (long id)))         ;; -- EAD - added in
 (defn cluster-names "" [] (map oclass-name->kw (.getClusterNames *db*)))
 (defn cluster-name "" [id] (oclass-name->kw (.getClusterNameById *db* id)))
 (defn cluster-id "" [kname] (.getClusterIdByName *db* (kw->oclass-name kname)))
@@ -240,7 +243,8 @@ The exception will be rethrown so the programmer can catch it."
 (defn document
   "Returns a newly created document given the document's class (as a keyword).
 It can optionally take a Clojure hash-map to set the document's properties."
-  ([kclass] (CljODoc. (ODocument. *db* (kw->oclass-name kclass))))
+  ;; ([kclass] (CljODoc. (ODocument. *db* (kw->oclass-name kclass))))        -- EAD - fix to remove database
+  ([kclass] (CljODoc. (ODocument. (kw->oclass-name kclass))))
   ([kclass properties] (merge (document kclass) properties)))
 
 (def +intents+ {:massive-read (OIntentMassiveRead.), :massive-write (OIntentMassiveInsert.)})
@@ -262,7 +266,8 @@ The documents must be passed as a sequence of hash-maps."
   [klass props*]
   (with-intent :massive-write
     (let [class (kw->oclass-name klass)
-          doc (ODocument. *db* class)]
+          ;; doc (ODocument. *db* class)                     -- EAD - need to remove the database component
+          doc (ODocument. class)]
       (doseq [p props*]
         (.reset doc)
         (.setClassName doc class)
@@ -293,14 +298,14 @@ The documents must be passed as a sequence of hash-maps."
   ([orid] (CljODoc. (if (vector? orid)
                       (let [[c i] orid]
                         (if (keyword? c)
-                          (.load *db* (ORecordId. (cluster-id c) i))
-                          (.load *db* (ORecordId. c i))))
+                          (.load *db* (ORecordId. (cluster-id c) (cluster-position-from-value i)))
+                          (.load *db* (ORecordId. c (cluster-position-from-value i)))))
                       (.load *db* orid))))
   ([orid fetch-plan] (CljODoc. (if (vector? orid)
                                  (let [[c i] orid]
                                    (if (keyword? c)
-                                     (.load *db* (ORecordId. (cluster-id c) i) fetch-plan)
-                                     (.load *db* (ORecordId. c i) fetch-plan)))
+                                     (.load *db* (ORecordId. (cluster-id c) (cluster-position-from-value i)) fetch-plan)
+                                     (.load *db* (ORecordId. c (cluster-position-from-value i)) fetch-plan)))
                                  (.load *db* orid fetch-plan)))))
 
 (defn delete!

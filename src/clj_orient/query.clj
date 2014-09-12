@@ -11,11 +11,13 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns ^{:author "Eduardo Julian <eduardoejp@gmail.com>",
-      :doc "This namespace wraps the querying functionality, both for native queries and SQL queries."}
+      ;; -- EAD - native removed in 1.6 - :doc "This namespace wraps the querying functionality, both for native queries and SQL queries."
+      :doc "This namespace wraps the querying functionality."}
   clj-orient.query
   (:refer-clojure :exclude [load])
   (:use (clj-orient core))
-  (:import (com.orientechnologies.orient.core.query.nativ ONativeSynchQuery OQueryContextNativeSchema)
+  (:import
+    ;;(com.orientechnologies.orient.core.query.nativ ONativeSynchQuery OQueryContextNativeSchema)     -- EAD - removed in 1.6
     com.orientechnologies.orient.core.sql.query.OSQLSynchQuery
     com.orientechnologies.orient.core.sql.OCommandSQL
     com.orientechnologies.orient.core.db.ODatabaseComplex
@@ -25,68 +27,68 @@
 
 (declare sym->sql item->sql map->sql)
 
-; <Native Queries>
-(def ^:private +n-operators+ #{:$= :$not= :$< :$<= :$> :$>= :$like :$matches})
-(def ^:private op->meth {:$= '.eq, :$not= '.different, :$like '.like, :$matches '.matches,
-                         :$< '.minor, :$<= '.minorEq, :$> '.major, :$>= '.majorEq})
-
-(defn- _special-cases "Adds the operator methods to the hash-map fn." [v]
-  (if (+n-operators+ (first v))
-    (list (op->meth (first v)) (second v))
-    (list '.eq v)))
-
-(defn- map->fn "Constructs the filter fn from the passed hash-map."
-  [kvs]
-  (->> (reduce (fn [f [k v]]
-                 (conj f (list '.field (name k))
-                       (if (vector? v)
-                         (_special-cases v)
-                         (list '.eq v))
-                       '.and))
-               '(% ->) kvs)
-    rest
-    (cons '.go)
-    reverse
-    (list 'fn '[%])
-    eval))
-
-(defn ->native-query
-  "Takes either a function or a hash-map and returns an ONativeSynchQuery object.
-
-When provided a filtering function, you will have to make your own query using the available Java methods
-for the OQueryContextNativeSchema instance you will be given.
-
-When provided a hash-map, matching will be done like this:
-{:field1 val1
- :field2 [<command> val2]}
-
-e.g.
-{:country \"USA\",
- :age [:$>= 20]
- :last-name [:$not= \"Smith\"]}
-
-Available operators:
-:$=, :$not=, :$<, :$<=, :$>, :$>=, :$like, :$matches
-
-When not provided a command, it works like :$= (.eq)."
-  [kclass fn-kvs]
-  (let [f (if (fn? fn-kvs)
-            fn-kvs
-            (if (empty? fn-kvs)
-              (fn [_] true)
-              (map->fn fn-kvs)))]
-    (proxy [com.orientechnologies.orient.core.query.nativ.ONativeSynchQuery]
-      [*db*, (kw->oclass-name kclass), (OQueryContextNativeSchema.)]
-      (filter [*record*] (f *record*)))))
-
-(defn native-query
-  "Executes a native query that filters results by the class of the documents (as a keyword) and a filtering function.
-It takes either an ONativeSynchQuery object, a function or a hash-map.
-Returns results as a lazy-seq of CljODoc objects."
-  [klass query & [fetch-plan]]
-  (let [query (if (instance? ONativeSynchQuery query) query (->native-query klass query))
-        query (if fetch-plan (.setFetchPlan query fetch-plan) query)]
-    (map #(CljODoc. %) (.query *db* query (to-array nil)))))
+;; -- EAD - removed in 1.6 - ; <Native Queries>
+;; -- EAD - removed in 1.6 - (def ^:private +n-operators+ #{:$= :$not= :$< :$<= :$> :$>= :$like :$matches})
+;; -- EAD - removed in 1.6 - (def ^:private op->meth {:$= '.eq, :$not= '.different, :$like '.like, :$matches '.matches,
+;; -- EAD - removed in 1.6 -                          :$< '.minor, :$<= '.minorEq, :$> '.major, :$>= '.majorEq})
+;; -- EAD - removed in 1.6 - 
+;; -- EAD - removed in 1.6 - (defn- _special-cases "Adds the operator methods to the hash-map fn." [v]
+;; -- EAD - removed in 1.6 -   (if (+n-operators+ (first v))
+;; -- EAD - removed in 1.6 -     (list (op->meth (first v)) (second v))
+;; -- EAD - removed in 1.6 -     (list '.eq v)))
+;; -- EAD - removed in 1.6 - 
+;; -- EAD - removed in 1.6 - (defn- map->fn "Constructs the filter fn from the passed hash-map."
+;; -- EAD - removed in 1.6 -   [kvs]
+;; -- EAD - removed in 1.6 -   (->> (reduce (fn [f [k v]]
+;; -- EAD - removed in 1.6 -                  (conj f (list '.field (name k))
+;; -- EAD - removed in 1.6 -                        (if (vector? v)
+;; -- EAD - removed in 1.6 -                          (_special-cases v)
+;; -- EAD - removed in 1.6 -                          (list '.eq v))
+;; -- EAD - removed in 1.6 -                        '.and))
+;; -- EAD - removed in 1.6 -                '(% ->) kvs)
+;; -- EAD - removed in 1.6 -     rest
+;; -- EAD - removed in 1.6 -     (cons '.go)
+;; -- EAD - removed in 1.6 -     reverse
+;; -- EAD - removed in 1.6 -     (list 'fn '[%])
+;; -- EAD - removed in 1.6 -     eval))
+;; -- EAD - removed in 1.6 - 
+;; -- EAD - removed in 1.6 - (defn ->native-query
+;; -- EAD - removed in 1.6 -   "Takes either a function or a hash-map and returns an ONativeSynchQuery object.
+;; -- EAD - removed in 1.6 - 
+;; -- EAD - removed in 1.6 - When provided a filtering function, you will have to make your own query using the available Java methods
+;; -- EAD - removed in 1.6 - for the OQueryContextNativeSchema instance you will be given.
+;; -- EAD - removed in 1.6 - 
+;; -- EAD - removed in 1.6 - When provided a hash-map, matching will be done like this:
+;; -- EAD - removed in 1.6 - {:field1 val1
+;; -- EAD - removed in 1.6 -  :field2 [<command> val2]}
+;; -- EAD - removed in 1.6 - 
+;; -- EAD - removed in 1.6 - e.g.
+;; -- EAD - removed in 1.6 - {:country \"USA\",
+;; -- EAD - removed in 1.6 -  :age [:$>= 20]
+;; -- EAD - removed in 1.6 -  :last-name [:$not= \"Smith\"]}
+;; -- EAD - removed in 1.6 - 
+;; -- EAD - removed in 1.6 - Available operators:
+;; -- EAD - removed in 1.6 - :$=, :$not=, :$<, :$<=, :$>, :$>=, :$like, :$matches
+;; -- EAD - removed in 1.6 - 
+;; -- EAD - removed in 1.6 - When not provided a command, it works like :$= (.eq)."
+;; -- EAD - removed in 1.6 -   [kclass fn-kvs]
+;; -- EAD - removed in 1.6 -   (let [f (if (fn? fn-kvs)
+;; -- EAD - removed in 1.6 -             fn-kvs
+;; -- EAD - removed in 1.6 -             (if (empty? fn-kvs)
+;; -- EAD - removed in 1.6 -               (fn [_] true)
+;; -- EAD - removed in 1.6 -               (map->fn fn-kvs)))]
+;; -- EAD - removed in 1.6 -     (proxy [com.orientechnologies.orient.core.query.nativ.ONativeSynchQuery]
+;; -- EAD - removed in 1.6 -       [*db*, (kw->oclass-name kclass), (OQueryContextNativeSchema.)]
+;; -- EAD - removed in 1.6 -       (filter [*record*] (f *record*)))))
+;; -- EAD - removed in 1.6 - 
+;; -- EAD - removed in 1.6 - (defn native-query
+;; -- EAD - removed in 1.6 -   "Executes a native query that filters results by the class of the documents (as a keyword) and a filtering function.
+;; -- EAD - removed in 1.6 - It takes either an ONativeSynchQuery object, a function or a hash-map.
+;; -- EAD - removed in 1.6 - Returns results as a lazy-seq of CljODoc objects."
+;; -- EAD - removed in 1.6 -   [klass query & [fetch-plan]]
+;; -- EAD - removed in 1.6 -   (let [query (if (instance? ONativeSynchQuery query) query (->native-query klass query))
+;; -- EAD - removed in 1.6 -         query (if fetch-plan (.setFetchPlan query fetch-plan) query)]
+;; -- EAD - removed in 1.6 -     (map #(CljODoc. %) (.query *db* query (to-array nil)))))
 
 ; <API Graph Traversals>
 (defn- $var "Wraps the OCommandContext object to mediate access to the context variables."
@@ -109,9 +111,10 @@ Returns results as a lazy-seq of CljODoc objects."
     (.fields (map name fields))
     (.target (map #(if (orid? %) % (% :#rid)) target))
     (.limit (or limit 0))
-    (.predicate (reify OCommandPredicate
-                  (evaluate [self odoc ctx]
-                    (pred (wrap-odoc odoc) (partial $var ctx)))))
+    ;; -- EAD - fix? - (.predicate (reify OCommandPredicate
+    ;; -- EAD - fix? -               (evaluate [self odoc ctx]
+    ;; -- EAD - fix? -                 (pred (wrap-odoc odoc) (partial $var ctx)))))
+    ;; -- EAD - ToDo: fix above to reflect additional record field
     (->> (map wrap-odoc))))
 
 ; <SQL Queries>
@@ -165,7 +168,9 @@ function will also be defined."
     `(let [sqlfn# (proxy [com.orientechnologies.orient.core.sql.functions.OSQLFunctionAbstract]
                     [~(name sym) ~(count args) ~(count args)]
                     (~'getSyntax [] ~(str sym "(" (apply str (interpose ", " (rest args))) ")"))
-                    (~'execute [~'*document* args# ~'*requester*] (let [~'*document* (~'clj-orient.core/wrap-odoc ~'*document*) ~args args#] ~@body))
+                    ;; -- EAD - had to get a result, see below - (~'execute [~'*document* args# ~'*requester*] (let [~'*document* (~'clj-orient.core/wrap-odoc ~'*document*) ~args args#] ~@body))
+                    (~'execute [~'*document* result# args# ~'*requester*] (let [~'*document* (~'clj-orient.core/wrap-odoc ~'*document*) ~args args#] ~@body))
+
                     )]
        (swap! sql-fns conj [~(name sym) sqlfn#])
        ~(if-not (some #(or (= % '*document*) (= % '*requester*)) (flatten body))
